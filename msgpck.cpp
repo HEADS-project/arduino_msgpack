@@ -241,7 +241,7 @@ bool msgpck_read_bool(Stream * s, bool *b) {
   uint8_t rfb;
   uint8_t dmp = s->readBytes(&rfb,1);
   *b = (rfb == 0xc3);
-  return ((dmp == 1) && (*b) && (rfb == 0xc2));
+  return ((dmp == 1) && ((rfb == 0xc3) || (rfb == 0xc2)));
 }
 
 bool msgpck_read_integer(Stream * s, byte *b, uint8_t max_size) {

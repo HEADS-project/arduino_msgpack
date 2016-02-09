@@ -1,26 +1,22 @@
 #include "msgpck.h"
 
 /* 
- * This is an example of message pack library use for Arduino mega.
+ * This is an example of message pack library use for Arduino Uno.
  *
- * It writes some message pack serialized data on Serial1 and receives them on Serial2.
- * Serial is used, plugged with your computer, in order to display the json corresponding 
- * to data exchanged on your serial console.
+ * It reads the serial port expecting messages like {"pin":6, "val":true} 
+ * to turn the pin 6 or 7 to high or low.
+ * It also listen on pin 8 and forward its value with the same format.
  * 
- * Expected output:
- * Start
- * {"nil": nil, "bool": false, "uint": 12, "int": -256, "float": 0.50, "array": [5, 2500, -1503]}
- * Done
  * 
  * Exchanged Message Pack data:
  * 
- * 0x86 0xa3 0x6e 0x69 0x6c 0xc0 0xa4 0x62
- * 0x6f 0x6f 0x6c 0xc2 0xa4 0x75 0x69 0x6e
- * 0x74 0x0c 0xa3 0x69 0x6e 0x74 0xd1 0xff
- * 0x00 0xa5 0x66 0x6c 0x6f 0x61 0x74 0xca
- * 0x3f 0xe0 0x00 0x00 0xa5 0x61 0x72 0x72
- * 0x61 0x79 0x93 0x05 0xcd 0x09 0xc4 0xd1
- * 0xfa 0x21
+ * Turn led 6 on: 0x82 0xa3 0x70 0x69 0x6e 0x06 0xa3 0x76 0x61 0x6c 0xc3
+ * Turn led 6 off: 0x82 0xa3 0x70 0x69 0x6e 0x06 0xa3 0x76 0x61 0x6c 0xc2
+ * Turn led 7 on: 0x82 0xa3 0x70 0x69 0x6e 0x07 0xa3 0x76 0x61 0x6c 0xc3
+ * Turn led 7 off: 0x82 0xa3 0x70 0x69 0x6e 0x07 0xa3 0x76 0x61 0x6c 0xc2
+ * 
+ * Button 8 is pressed: 0x82 0xa3 0x70 0x69 0x6e 0x08 0xa3 0x76 0x61 0x6c 0xc3
+ * Button 8 isn't pressed: 0x82 0xa3 0x70 0x69 0x6e 0x08 0xa3 0x76 0x61 0x6c 0xc2
  * 
  * Wiring:
  * Connect pin 6 to a led
@@ -63,8 +59,8 @@ bool read_message() {
     if(!res)
       return false;
     res &= (buf[0] == 'p');
-    res &= (buf[0] == 'i');
-    res &= (buf[0] == 'n');
+    res &= (buf[1] == 'i');
+    res &= (buf[2] == 'n');
     res &= msgpck_read_integer(&Serial, &pin, 1);
     if(!res)
       return false;
@@ -72,8 +68,8 @@ bool read_message() {
     if(!res)
       return false;
     res &= (buf[0] == 'v');
-    res &= (buf[0] == 'a');
-    res &= (buf[0] == 'l');
+    res &= (buf[1] == 'a');
+    res &= (buf[2] == 'l');
     res &= msgpck_read_bool(&Serial, &level);
     if(!res)
       return false;
@@ -87,17 +83,17 @@ bool read_message() {
 bool button;
 
 void loop() {
-  if(!read_message())
+  if(!read_message())//If read return false, a message is corrupt, so we flush the buffer
     Serial.flush();
 
   bool new_val = digitalRead(8);
   if(button != new_val) {
     button = new_val;
-    msgpck_write_map_header(&Serial, 2);
-    msgpck_write_string(&Serial, "pin");
-    msgpck_write_integer(&Serial, 8);
-    msgpck_write_string(&Serial, "val");
-    msgpck_write_bool(&Serial, button);
+    msgpck_write_map_header(&Serial, 2); //Map containing two pair of element
+    msgpck_write_string(&Serial, "pin"); //key: String "pin"
+    msgpck_write_integer(&Serial, 8); //Value: integer 8
+    msgpck_write_string(&Serial, "val"); //key: String "val"
+    msgpck_write_bool(&Serial, button); //Value: bool
     
   }
   

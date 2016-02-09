@@ -13,8 +13,8 @@ In short:
 * functions like `msgpck_write_bool(Stream * s, bool b)` write a value on Stream s.
 
 Notes:
-* Stream are used as much as possible in order not to add to many overhead with buffers. Therefor you should be able to store the minimum number of value at a given time.
-* map and array related function concern only their headers.
+* Stream are used as much as possible in order not to add to much overhead with buffers. Therefore you should be able to store the minimum number of value at a given time.
+* Map and Array related functions concern only their headers. Ex: If you want to write an array containing two elements you should write the array header, then write the two elements.
 
 
 ## Limitations
