@@ -1,4 +1,4 @@
-# arduino_msgpck
+# arduino_msgpack
 This Arduino library provides a light weight serializer and parser for messagepack.
 
 ## Install
