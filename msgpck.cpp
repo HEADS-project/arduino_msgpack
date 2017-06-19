@@ -525,7 +525,9 @@ void msgpck_write_integer(Stream * s, int8_t i) {
 }
 
 void msgpck_write_integer(Stream * s, int16_t i) {
-    if((i < -127) || (i > 254)) {
+	if(i > 0) {
+		msgpck_write_integer(s, (uint16_t) i);
+	} else if(i < -127) {
       s->write(0xd1);
       s->write(i >> 8);
       s->write(i & 0xff);
@@ -535,7 +537,9 @@ void msgpck_write_integer(Stream * s, int16_t i) {
 }
 
 void msgpck_write_integer(Stream * s, int32_t i) {
-    if((i < -32768) || (i > 32767)) {
+	if(i > 0) {
+		msgpck_write_integer(s, (uint32_t) i);
+	} else if(i < -32768) {
       s->write(0xd2);
       s->write((i >> 24)& 0xff);
       s->write((i >> 16)& 0xff);
@@ -547,7 +551,9 @@ void msgpck_write_integer(Stream * s, int32_t i) {
 }
 
 void msgpck_write_integer(Stream * s, int64_t i) {
-    if((i < -2147483647) || (i > 2147483647)) {
+	if(i > 0) {
+		msgpck_write_integer(s, (uint64_t) i);
+	} else if(i < -2147483647) {
       s->write(0xd3);
       s->write(i >> 56);
       s->write(i >> 48);
