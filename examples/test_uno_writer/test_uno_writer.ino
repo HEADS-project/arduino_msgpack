@@ -34,7 +34,7 @@ void setup() {
   msgpck_write_integer(&Serial, -256);
 
   msgpck_write_string(&Serial, "float", 5);
-  msgpck_write_integer(&Serial, 0.5);
+  msgpck_write_float(&Serial, 0.5f);
 
 
   msgpck_write_string(&Serial, "array", 5);
