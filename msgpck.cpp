@@ -503,7 +503,7 @@ void msgpck_write_integer(Stream * s, uint64_t u) {
   if(u < 4294967296) {
     msgpck_write_integer(s, (uint32_t) u);
   } else {
-    s->write(0xcd);
+    s->write(0xcf);
     s->write(u >> 56);
     s->write(u >> 48);
     s->write(u >> 40);
