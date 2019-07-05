@@ -11,7 +11,7 @@ msgpck_map_next	KEYWORD2
 msgpck_read_nil	KEYWORD2
 msgpck_read_bool	KEYWORD2
 msgpck_read_integer	KEYWORD2
-msgpack_read_float	KEYWORD2
+msgpck_read_float	KEYWORD2
 msgpck_read_string	KEYWORD2
 msgpck_read_string	KEYWORD2
 msgpck_read_bin	KEYWORD2
