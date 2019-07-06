@@ -193,7 +193,7 @@ bool msgpck_read_integer(Stream * s, byte *b, uint8_t max_size);
  * return: true if next data has been read correctly, false if not
  * 
 */
-bool msgpack_read_float(Stream * s, float *f);
+bool msgpck_read_float(Stream * s, float *f);
 
 /**
  * Function: msgpck_read_string
