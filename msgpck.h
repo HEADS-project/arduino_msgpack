@@ -193,7 +193,7 @@ bool msgpck_read_integer(Stream * s, byte *b, uint8_t max_size);
  * return: true if next data has been read correctly, false if not
  * 
 */
-bool msgpck_read_float(Stream * s, float *f);
+bool msgpack_read_float(Stream * s, float *f);
 
 /**
  * Function: msgpck_read_string
@@ -208,6 +208,18 @@ bool msgpck_read_float(Stream * s, float *f);
  * 
 */
 bool msgpck_read_string(Stream * s, char * str, uint32_t max_size, uint32_t *str_size);
+
+/**
+ * Function: msgpck_read_string
+ * Description: Read the first data of Stream s's buffer if it is a string.
+ * 
+ * Parameter: Stream * s : input stream.
+ *  Print * : output device
+ * 
+ * return: true if next data has been read correctly, false if not
+ * 
+*/
+bool msgpck_read_string(Stream * s, Print * p);
 
 /**
  * Function: msgpck_read_string
@@ -250,6 +262,32 @@ bool msgpck_read_bin(Stream * s, byte * bin, uint32_t max_size, uint32_t *bin_si
 bool msgpck_read_bin(Stream * s, byte * bin, uint32_t max_size);
 
 /**
+ * Function: msgpck_read_bin
+ * Description: Read the first data of Stream s's buffer if it is a bin.
+ * 
+ * Parameter: Stream * s : input stream.
+ *  Print * s : output device.
+ * 
+ * return: true if next data has been read correctly, false if not
+ * 
+*/
+bool msgpck_read_bin(Stream * s, Print * p);
+
+/**
+ * Function: msgpck_read_bin_human
+ * Description: Read the first data of Stream s's buffer if it is a bin.
+ *  Data are formatted into a string where each bytes are prefixed with
+ *  0x...
+ * 
+ * Parameter: Stream * s : input stream.
+ *  Print * s : output device.
+ * 
+ * return: true if next data has been read correctly, false if not
+ * 
+*/
+bool msgpck_read_bin_human(Stream * s, Print * p);
+
+/**
  * Function: msgpck_read_array_size
  * Description: Read the header of the incoming array.
  * 
@@ -282,171 +320,171 @@ bool msgpck_read_map_size(Stream * s, uint32_t * map_size);
  * Function: msgpck_write_nil
  * Description: Write nil on the output stream
  * 
- * Parameter: Stream * s : output stream.
+ * Parameter: Print * s : output stream.
  * 
 */
-void msgpck_write_nil(Stream * s);
+void msgpck_write_nil(Print * s);
 
 /**
  * Function: msgpck_write_bool
  * Description: Write a bool data on the output stream
  * 
- * Parameter: Stream * s : output stream.
+ * Parameter: Print * s : output stream.
  *  bool b: bool value to write
  * 
 */
-void msgpck_write_bool(Stream * s, bool b);
+void msgpck_write_bool(Print * s, bool b);
 
 /**
  * Function: msgpck_write_integer
  * Description: Write an integer data on the output stream
  * 
- * Parameter: Stream * s : output stream.
+ * Parameter: Print * s : output stream.
  *  uint8_t u: integer value to write
  * 
 */
-void msgpck_write_integer(Stream * s, uint8_t u);
+void msgpck_write_integer(Print * s, uint8_t u);
 
 /**
  * Function: msgpck_write_integer
  * Description: Write an integer data on the output stream
  * 
- * Parameter: Stream * s : output stream.
+ * Parameter: Print * s : output stream.
  *  uint16_t u: integer value to write
  * 
 */
-void msgpck_write_integer(Stream * s, uint16_t u);
+void msgpck_write_integer(Print * s, uint16_t u);
 
 /**
  * Function: msgpck_write_integer
  * Description: Write an integer data on the output stream
  * 
- * Parameter: Stream * s : output stream.
+ * Parameter: Print * s : output stream.
  *  uint32_t u: integer value to write
  * 
 */
-void msgpck_write_integer(Stream * s, uint32_t u);
+void msgpck_write_integer(Print * s, uint32_t u);
 
 /**
  * Function: msgpck_write_integer
  * Description: Write an integer data on the output stream
  * 
- * Parameter: Stream * s : output stream.
+ * Parameter: Print * s : output stream.
  *  uint64_t u: integer value to write
  * 
 */
-void msgpck_write_integer(Stream * s, uint64_t u);
+void msgpck_write_integer(Print * s, uint64_t u);
 
 /**
  * Function: msgpck_write_integer
  * Description: Write an integer data on the output stream
  * 
- * Parameter: Stream * s : output stream.
+ * Parameter: Print * s : output stream.
  *  int8_t i: integer value to write
  * 
 */
-void msgpck_write_integer(Stream * s, int8_t i);
+void msgpck_write_integer(Print * s, int8_t i);
 
 /**
  * Function: msgpck_write_integer
  * Description: Write an integer data on the output stream
  * 
- * Parameter: Stream * s : output stream.
+ * Parameter: Print * s : output stream.
  *  int16_t i: integer value to write
  * 
 */
-void msgpck_write_integer(Stream * s, int16_t i);
+void msgpck_write_integer(Print * s, int16_t i);
 
 /**
  * Function: msgpck_write_integer
  * Description: Write an integer data on the output stream
  * 
- * Parameter: Stream * s : output stream.
+ * Parameter: Print * s : output stream.
  *  int32_t i: integer value to write
  * 
 */
-void msgpck_write_integer(Stream * s, int32_t i);
+void msgpck_write_integer(Print * s, int32_t i);
 
 /**
  * Function: msgpck_write_integer
  * Description: Write an integer data on the output stream
  * 
- * Parameter: Stream * s : output stream.
+ * Parameter: Print * s : output stream.
  *  int64_t i: integer value to write
  * 
 */
-void msgpck_write_integer(Stream * s, int64_t i);
+void msgpck_write_integer(Print * s, int64_t i);
 
 /**
  * Function: msgpck_write_float
  * Description: Write a float data on the output stream
  * 
- * Parameter: Stream * s : output stream.
+ * Parameter: Print * s : output stream.
  *  float f: float value to write
  * 
 */
-void msgpck_write_float(Stream *s, float f);
+void msgpck_write_float(Print *s, float f);
 
 /**
  * Function: msgpck_write_string
  * Description: Write string on the output stream
  * 
- * Parameter: Stream * s : output stream.
+ * Parameter: Print * s : output stream.
  *  char * str: a string to write
  *  uint32_t str_size: size of the string to write
  * 
 */
-void msgpck_write_string(Stream * s, char * str, uint32_t str_size);
+void msgpck_write_string(Print * s, char * str, uint32_t str_size);
 
 /**
  * Function: msgpck_write_string
  * Description: Write a string on the output stream
  * 
- * Parameter: Stream * s : output stream.
+ * Parameter: Print * s : output stream.
  *  String str: string to write
  * 
 */
-void msgpck_write_string(Stream * s, String str);
+void msgpck_write_string(Print * s, String str);
 
 /**
  * Function: msgpck_write_bin
  * Description: Write a bin data on the output stream
  * 
- * Parameter: Stream * s : output stream.
+ * Parameter: Print * s : output stream.
  *  byte * b: bin to write
  *  uint32_t bin_size: size of the bin to write
  * 
 */
-void msgpck_write_bin(Stream * s, byte * b, uint32_t bin_size);
+void msgpck_write_bin(Print * s, byte * b, uint32_t bin_size);
 
 /**
  * Function: msgpck_write_array_header
  * Description: Write the header of an array on the output stream
  * 
- * Parameter: Stream * s : output stream.
+ * Parameter: Print * s : output stream.
  *  uint32_t ar_size: numder of element in the array
  * 
 */
-void msgpck_write_array_header(Stream * s, uint32_t ar_size);
+void msgpck_write_array_header(Print * s, uint32_t ar_size);
 
 /**
  * Function: msgpck_write_map_header
  * Description: Write the header of a map on the output stream
  * 
- * Parameter: Stream * s : output stream.
+ * Parameter: Print * s : output stream.
  *  uint32_t ar_size: numder of pair (key, element) in the map
  * 
 */
-void msgpck_write_map_header(Stream * s, uint32_t map_size);
+void msgpck_write_map_header(Print * s, uint32_t map_size);
 
 /**
  * Function: msgpck_to_json
  * Description: read messagepack data on the input and write json on the ouput
  * 
- * Parameter: Stream * output : output stream.
+ * Parameter: Print * output : output stream.
  *  Stream * input : input stream.
  * 
 */
-void msgpck_to_json(Stream * output, Stream * input);
+void msgpck_to_json(Print * output, Stream * input);
 
 #endif

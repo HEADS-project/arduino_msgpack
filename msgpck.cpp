@@ -306,7 +306,7 @@ bool msgpck_read_integer(Stream * s, byte *b, uint8_t max_size) {
   return res;
 }
 
-bool msgpck_read_float(Stream * s, float *f) {
+bool msgpack_read_float(Stream * s, float *f) {
   byte fb;
   uint8_t read_size;
   bool b = true;
@@ -335,39 +335,110 @@ bool msgpck_read_float(Stream * s, float *f) {
   return false;
 }
 
-bool msgpck_read_string(Stream * s, char * str, uint32_t max_size, uint32_t *str_size) {
+bool msgpck_read_string_length(Stream * s, uint32_t *str_size) {
   *str_size = 0;
   uint8_t fb;
   bool b = true;
   uint32_t read_size = 0;
   uint8_t * p = (uint8_t *) &read_size;
-  if(s->readBytes(&fb,1) == 1) {
-    if((fb >> 5) == 5) {
-      read_size = fb & 0x1f;
-    } else if(fb == 0xd9) {
-      b &= s->readBytes(&p[0],1) == 1;
-    } else if(fb == 0xda) {
-      b &= s->readBytes(&p[1],1) == 1;
-      b &= s->readBytes(&p[0],1) == 1;
-    } else if(fb == 0xdb) {
-      b &= s->readBytes(&p[3],1) == 1;
-      b &= s->readBytes(&p[2],1) == 1;
-      b &= s->readBytes(&p[1],1) == 1;
-      b &= s->readBytes(&p[0],1) == 1;
-    } else {
-      return false;
-    }
-    *str_size = read_size;
-    if(read_size > max_size)
-      return false;
-    //b &= s->readBytes(str,read_size) == read_size;
-    uint32_t i;
-    for(i = 0; i < read_size; i++) {
-      b &= s->readBytes(&str[i],1) == 1;
-    }
-    return b;
+  if(s->readBytes(&fb,1) != 1) {
+    return false;
   }
-  return false;
+
+  if((fb >> 5) == 5) {
+    read_size = fb & 0x1f;
+  } else if(fb == 0xd9) {
+    b &= s->readBytes(&p[0],1) == 1;
+  } else if(fb == 0xda) {
+    b &= s->readBytes(&p[1],1) == 1;
+    b &= s->readBytes(&p[0],1) == 1;
+  } else if(fb == 0xdb) {
+    b &= s->readBytes(&p[3],1) == 1;
+    b &= s->readBytes(&p[2],1) == 1;
+    b &= s->readBytes(&p[1],1) == 1;
+    b &= s->readBytes(&p[0],1) == 1;
+  } else {
+    return false;
+  }
+  if (!b) {
+    read_size = 0;
+  }
+  *str_size = read_size;
+  return b;
+}
+
+bool msgpck_read_buffer(Stream * s, uint8_t * buf, uint32_t size) {
+  size_t count = s->readBytes(buf, size);
+  return count == size;
+}
+
+bool msgpck_read_buffer(Stream * s, Print * p, uint32_t size) {
+  size_t bufSize = 15;
+  char buf[bufSize];
+  size_t length = 0;
+  size_t count = 0;
+  do
+  {
+    count = size - length;
+    if (count > bufSize)
+    {
+      count = bufSize;
+    }
+    count = s->readBytes(buf, count);
+    if (count > 0) {
+      p->write(buf, count);
+      length += count;
+    }
+  } while (size > length && count > 0);
+  return length == size;
+}
+
+bool msgpck_read_buffer_human(Stream * s, Print * p, uint32_t size) {
+  size_t bufSize = 15;
+  char buf[bufSize];
+  size_t length = 0;
+  size_t count = 0;
+  do
+  {
+    count = size - length;
+    if (count > bufSize)
+    {
+      count = bufSize;
+    }
+    count = s->readBytes(buf, count);
+    if (count > 0) {
+      for (size_t i = 0; i < count; i++) {
+        p->write(" 0x");
+        p->print(buf[i], HEX);
+      }
+      length += count;
+    }
+  } while (size > length && count > 0);
+  return length == size;
+}
+
+bool msgpck_read_string(Stream * s, Print * p) {
+  uint32_t str_size;
+  bool b = msgpck_read_string_length(s, &str_size);
+  if (!b) {
+    return false;
+  }
+  return msgpck_read_buffer(s, p, str_size);
+}
+
+bool msgpck_read_string(Stream * s, char * str, uint32_t max_size, uint32_t *str_size) {  
+  bool b = msgpck_read_string_length(s, str_size);
+  if (!b || *str_size >= max_size) {
+    return false;
+  }
+  
+  b = msgpck_read_buffer(s, (uint8_t*)str, *str_size);
+  if (!b) {
+    *str = 0;
+  } else {
+    str[*str_size] = 0;  
+  }
+  return b;
 }
 
 bool msgpck_read_string(Stream * s, char * str, uint32_t max_size) {
@@ -375,33 +446,60 @@ bool msgpck_read_string(Stream * s, char * str, uint32_t max_size) {
   return msgpck_read_string(s, str, max_size, &read_size);
 }
 
-
-bool msgpck_read_bin(Stream * s, byte * bin, uint32_t max_size, uint32_t *bin_size) {
+bool msgpck_read_bin_length(Stream * s, uint32_t *bin_size) {
   uint8_t fb;
   bool b = true;
   uint32_t read_size = 0;
   uint8_t * p = (uint8_t *) &read_size;
-  if(s->readBytes(&fb,1) == 1) {
-    if(fb == 0xc4) {
-      b &= s->readBytes(&p[0],1) == 1;
-    } else if(fb == 0xc5) {
-      b &= s->readBytes(&p[1],1) == 1;
-      b &= s->readBytes(&p[0],1) == 1;
-    } else if(fb == 0xc6) {
-      b &= s->readBytes(&p[3],1) == 1;
-      b &= s->readBytes(&p[2],1) == 1;
-      b &= s->readBytes(&p[1],1) == 1;
-      b &= s->readBytes(&p[0],1) == 1;
-    } else {
-      return false;
-    }
-    *bin_size = read_size;
-    if(read_size > max_size)
-      return false;
-    b &= s->readBytes(bin,read_size) == read_size;
-    return b;
+  if(s->readBytes(&fb,1) != 1) {
+    return false;
   }
-  return false;
+
+  if(fb == 0xc4) {
+    b &= s->readBytes(&p[0],1) == 1;
+  } else if(fb == 0xc5) {
+    b &= s->readBytes(&p[1],1) == 1;
+    b &= s->readBytes(&p[0],1) == 1;
+  } else if(fb == 0xc6) {
+    b &= s->readBytes(&p[3],1) == 1;
+    b &= s->readBytes(&p[2],1) == 1;
+    b &= s->readBytes(&p[1],1) == 1;
+    b &= s->readBytes(&p[0],1) == 1;
+  } else {
+    return false;
+  }
+  
+  if (!b) {
+    *bin_size = read_size;
+  }
+  
+  return b;
+}
+
+bool msgpck_read_bin(Stream * s, byte * bin, uint32_t max_size, uint32_t *bin_size) {
+  bool b = msgpck_read_bin_length(s, bin_size);
+  if (!b || *bin_size > max_size) {
+    return false;
+  }
+  return msgpck_read_buffer(s, bin, *bin_size);
+}
+
+bool msgpck_read_bin(Stream * s, Print * p) {
+  uint32_t bin_size;
+  bool b = msgpck_read_bin_length(s, &bin_size);
+  if (!b) {
+    return false;
+  }
+  return msgpck_read_buffer(s, p, bin_size);
+}
+
+bool msgpck_read_bin_human(Stream * s, Print * p) {
+  uint32_t bin_size;
+  bool b = msgpck_read_bin_length(s, &bin_size);
+  if (!b) {
+    return false;
+  }
+  return msgpck_read_buffer_human(s, p, bin_size);
 }
 
 bool msgpck_read_bin(Stream * s, byte * bin, uint32_t max_size) {
@@ -460,15 +558,15 @@ bool msgpck_read_map_size(Stream * s, uint32_t * map_size) {
   return false;
 }
 
-void msgpck_write_nil(Stream * s) {
+void msgpck_write_nil(Print * s) {
   s->write(0xc0);
 }
 
-void msgpck_write_bool(Stream * s, bool b) {
+void msgpck_write_bool(Print * s, bool b) {
   b ? s->write(0xc3) : s->write(0xc2);
 }
 
-void msgpck_write_integer(Stream * s, uint8_t u) {
+void msgpck_write_integer(Print * s, uint8_t u) {
   if(u < 128) {
     s->write(u);
   } else {
@@ -477,7 +575,7 @@ void msgpck_write_integer(Stream * s, uint8_t u) {
   }
 }
 
-void msgpck_write_integer(Stream * s, uint16_t u) {
+void msgpck_write_integer(Print * s, uint16_t u) {
   if(u < 256) {
     msgpck_write_integer(s, (uint8_t) u);
   } else {
@@ -487,7 +585,7 @@ void msgpck_write_integer(Stream * s, uint16_t u) {
   }
 }
 
-void msgpck_write_integer(Stream * s, uint32_t u) {
+void msgpck_write_integer(Print * s, uint32_t u) {
   if(u < 65536) {
     msgpck_write_integer(s, (uint16_t) u);
   } else {
@@ -499,23 +597,23 @@ void msgpck_write_integer(Stream * s, uint32_t u) {
   }
 }
 
-void msgpck_write_integer(Stream * s, uint64_t u) {
+void msgpck_write_integer(Print * s, uint64_t u) {
   if(u < 4294967296) {
     msgpck_write_integer(s, (uint32_t) u);
   } else {
-    s->write(0xcf);
-    s->write(u >> 56);
-    s->write(u >> 48);
-    s->write(u >> 40);
-    s->write(u >> 32);
-    s->write(u >> 24);
-    s->write(u >> 16);
-    s->write(u >> 8);
-    s->write(u & 0xff);
+    s->write(0xcd);
+    s->write((uint8_t)(u >> 56));
+    s->write((uint8_t)(u >> 48));
+    s->write((uint8_t)(u >> 40));
+    s->write((uint8_t)(u >> 32));
+    s->write((uint8_t)(u >> 24));
+    s->write((uint8_t)(u >> 16));
+    s->write((uint8_t)(u >> 8));
+    s->write((uint8_t)(u & 0xff));
   }
 }
 
-void msgpck_write_integer(Stream * s, int8_t i) {
+void msgpck_write_integer(Print * s, int8_t i) {
     if((i < -32) || (i > 127)) {
       s->write(0xd0);
       s->write(i);
@@ -524,7 +622,7 @@ void msgpck_write_integer(Stream * s, int8_t i) {
     }
 }
 
-void msgpck_write_integer(Stream * s, int16_t i) {
+void msgpck_write_integer(Print * s, int16_t i) {
 	if(i > 0) {
 		msgpck_write_integer(s, (uint16_t) i);
 	} else if(i < -127) {
@@ -536,7 +634,7 @@ void msgpck_write_integer(Stream * s, int16_t i) {
     }
 }
 
-void msgpck_write_integer(Stream * s, int32_t i) {
+void msgpck_write_integer(Print * s, int32_t i) {
 	if(i > 0) {
 		msgpck_write_integer(s, (uint32_t) i);
 	} else if(i < -32768) {
@@ -550,25 +648,25 @@ void msgpck_write_integer(Stream * s, int32_t i) {
     }
 }
 
-void msgpck_write_integer(Stream * s, int64_t i) {
+void msgpck_write_integer(Print * s, int64_t i) {
 	if(i > 0) {
 		msgpck_write_integer(s, (uint64_t) i);
 	} else if(i < -2147483647) {
       s->write(0xd3);
-      s->write(i >> 56);
-      s->write(i >> 48);
-      s->write(i >> 40);
-      s->write(i >> 32);
-      s->write(i >> 24);
-      s->write(i >> 16);
-      s->write(i >> 8);
-      s->write(i & 0xff);
+      s->write((uint8_t)(i >> 56));
+      s->write((uint8_t)(i >> 48));
+      s->write((uint8_t)(i >> 40));
+      s->write((uint8_t)(i >> 32));
+      s->write((uint8_t)(i >> 24));
+      s->write((uint8_t)(i >> 16));
+      s->write((uint8_t)(i >> 8));
+      s->write((uint8_t)(i & 0xff));
     } else {
       msgpck_write_integer(s, (int32_t) i);
     }
 }
 
-void msgpck_write_float(Stream *s, float f) {
+void msgpck_write_float(Print *s, float f) {
   union float_to_byte {
     float f;
     byte b[4];
@@ -581,7 +679,7 @@ void msgpck_write_float(Stream *s, float f) {
   s->write(f2b.b[0]);
 }
 
-void msgpck_write_string(Stream * s, char * str, uint32_t str_size) {
+void msgpck_write_string(Print * s, char * str, uint32_t str_size) {
   if(str_size > 65535) {
     s->write(0xdb);
     s->write((str_size >> 24) & 0xff);
@@ -604,13 +702,13 @@ void msgpck_write_string(Stream * s, char * str, uint32_t str_size) {
   }
 }
 
-void msgpck_write_string(Stream * s, String str) {
+void msgpck_write_string(Print * s, String str) {
   char buf[str.length()+1];
   str.toCharArray(buf, str.length()+1);
   msgpck_write_string(s, buf, str.length());
 }
 
-void msgpck_write_bin(Stream * s, byte * b, uint32_t bin_size) {
+void msgpck_write_bin(Print * s, byte * b, uint32_t bin_size) {
   if(bin_size > 65535) {
     s->write(0xc6);
     s->write((bin_size >> 24) & 0xff);
@@ -631,7 +729,7 @@ void msgpck_write_bin(Stream * s, byte * b, uint32_t bin_size) {
   }
 }
 
-void msgpck_write_array_header(Stream * s, uint32_t ar_size) {
+void msgpck_write_array_header(Print * s, uint32_t ar_size) {
   if(ar_size > 65535) {
     s->write(0xdd);
     s->write(ar_size >> 24);
@@ -647,7 +745,7 @@ void msgpck_write_array_header(Stream * s, uint32_t ar_size) {
   }
 }
 
-void msgpck_write_map_header(Stream * s, uint32_t map_size) {
+void msgpck_write_map_header(Print * s, uint32_t map_size) {
   if(map_size > 65535) {
     s->write(0xde);
     s->write(map_size >> 24);
@@ -663,33 +761,8 @@ void msgpck_write_map_header(Stream * s, uint32_t map_size) {
   }
 }
 
-void flush_buf(char * buf, uint16_t buf_size) {
-  uint16_t i;
-  for(i = 0; i < buf_size; i++) {
-    buf[i] = ' ';  
-  }
-  buf[buf_size] = '\0';  
-}
-
-void print_string(Stream * output, char * str, uint16_t str_size) {
-  uint16_t i;
-  for(i = 0; i < str_size; i++) {
-    output->write(str[i]);
-  }
-}
-
-void print_bin(Stream * output, byte * str, uint16_t str_size) {
-  uint16_t i;
-  for(i = 0; i < str_size; i++) {
-    output->write(" 0x");
-    output->print(str[i], HEX);
-  }
-}
-
-void msgpck_to_json(Stream * output, Stream * input) {
+void msgpck_to_json(Print * output, Stream * input) {
   uint8_t i;
-  uint16_t buf_size = 15;
-  char buf[buf_size+1];
   if(msgpck_map_next(input)) {
     uint32_t map_size;
     msgpck_read_map_size(input, &map_size);
@@ -697,11 +770,8 @@ void msgpck_to_json(Stream * output, Stream * input) {
     for(i = 0; i < map_size; i++) {
       if(i != 0)
         output->print(", ");
-      flush_buf( buf, buf_size);
-      uint32_t r_size;
-      msgpck_read_string(input, buf, buf_size, &r_size);
       output->print("\"");
-      print_string(output, buf, r_size);
+      msgpck_read_string(input, output);
       output->print("\": ");
       msgpck_to_json(output, input);
     }
@@ -730,31 +800,24 @@ void msgpck_to_json(Stream * output, Stream * input) {
   } else if(msgpck_integer_next(input)) {
     if(msgpck_signed_next(input)) {
       int32_t i = 0;
-      uint8_t * p = (uint8_t *) &i;
-      msgpck_read_integer(input, p, 4);
+      msgpck_read_integer(input, (uint8_t *) &i, 4);
       output->print(i);
     } else {
       uint32_t u = 0;
-      uint8_t * p = (uint8_t *) &u;
-      msgpck_read_integer(input, p, 4);
+      msgpck_read_integer(input, (uint8_t *) &u, 4);
       output->print(u);
     }
   } else if(msgpck_float_next(input)) {
       float f;
-      msgpck_read_float(input, &f);
+      msgpack_read_float(input, &f);
       output->print(f);
   } else if(msgpck_string_next(input)) {
-    flush_buf( buf, buf_size);
-    uint32_t r_size;
-    msgpck_read_string(input, buf, buf_size, &r_size);
     output->print("\"");
-    print_string(output, buf, r_size);
+    msgpck_read_string(input, output);
     output->print("\"");
   } else if(msgpck_bin_next(input)) {
-    flush_buf( buf, buf_size);
-    uint32_t r_size;
-    msgpck_read_bin(input,(unsigned char *)  buf, buf_size, &r_size);
-    print_bin(output, (unsigned char *) buf, r_size);
+    output->print("'");
+    msgpck_read_bin_human(input, output);
     output->print("'");
   }
 }
