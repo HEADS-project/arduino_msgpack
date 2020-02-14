@@ -306,7 +306,7 @@ bool msgpck_read_integer(Stream * s, byte *b, uint8_t max_size) {
   return res;
 }
 
-bool msgpack_read_float(Stream * s, float *f) {
+bool msgpck_read_float(Stream * s, float *f) {
   byte fb;
   uint8_t read_size;
   bool b = true;
@@ -809,7 +809,7 @@ void msgpck_to_json(Print * output, Stream * input) {
     }
   } else if(msgpck_float_next(input)) {
       float f;
-      msgpack_read_float(input, &f);
+      msgpck_read_float(input, &f);
       output->print(f);
   } else if(msgpck_string_next(input)) {
     output->print("\"");
